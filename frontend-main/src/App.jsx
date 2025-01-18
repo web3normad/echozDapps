@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import StarknetProvider from './components/starknet-provider';
+import { WalletProvider } from './context/WalletContext';
+
 
 // Import Components
 import DashboardLayout from "./components/DashboardLayout";
@@ -21,7 +22,7 @@ import Artist from "./pages/artist/ArtistDashboard";
 
 export default function App() {
   return (
-    <StarknetProvider>
+    <WalletProvider>
             <ThemeProvider>
               <Router>
                 <Routes>
@@ -160,6 +161,6 @@ export default function App() {
                 </Routes>
               </Router>
             </ThemeProvider>
-            </StarknetProvider>
+            </WalletProvider>
   );
 }

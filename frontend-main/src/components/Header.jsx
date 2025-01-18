@@ -1,71 +1,76 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, LogOut, Settings, User } from "lucide-react";
 import blockies from "ethereum-blockies";
 import { NavLink } from "react-router-dom";
-import { connect, disconnect } from "starknetkit";
-import { Contract, Provider, constants } from "starknet";
-
-// ERC20 token ABI for fetching balance
-const erc20Abi = [
-  {
-    members: [
-      {
-        name: "low",
-        offset: 0,
-        type: "felt"
-      },
-      {
-        name: "high",
-        offset: 1,
-        type: "felt"
-      }
-    ],
-    name: "Uint256",
-    size: 2,
-    type: "struct"
-  },
-  {
-    inputs: [
-      {
-        name: "account",
-        type: "felt"
-      }
-    ],
-    name: "balanceOf",
-    outputs: [
-      {
-        name: "balance",
-        type: "Uint256"
-      }
-    ],
-    stateMutability: "view",
-    type: "function"
-  }
-];
+import { useWallet } from "../context/WalletContext";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const [connection, setConnection] = useState(undefined);
-  const [address, setAddress] = useState("");
   const [balance, setBalance] = useState("0");
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+
+  // Get wallet context
+  const { 
+    wallet, 
+    address, 
+    connectWallet, 
+    disconnectWallet, 
+    getContract 
+  } = useWallet();
+
+  // ERC20 token ABI for fetching balance
+  const erc20Abi = [
+    {
+      members: [
+        {
+          name: "low",
+          offset: 0,
+          type: "felt"
+        },
+        {
+          name: "high",
+          offset: 1,
+          type: "felt"
+        }
+      ],
+      name: "Uint256",
+      size: 2,
+      type: "struct"
+    },
+    {
+      inputs: [
+        {
+          name: "account",
+          type: "felt"
+        }
+      ],
+      name: "balanceOf",
+      outputs: [
+        {
+          name: "balance",
+          type: "Uint256"
+        }
+      ],
+      stateMutability: "view",
+      type: "function"
+    }
+  ];
 
   // ETH contract address on Starknet
   const ETH_ADDRESS = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
 
-  const fetchBalance = async (wallet) => {
+  const fetchBalance = async () => {
     if (!wallet || !address) return;
 
     try {
       setIsLoadingBalance(true);
-      const provider = new Provider({
-        sequencer: {
-          network: constants.NetworkName.SN_MAIN
-        }
-      });
+      const ethContract = getContract(ETH_ADDRESS, erc20Abi);
       
-      const ethContract = new Contract(erc20Abi, ETH_ADDRESS, provider);
+      if (!ethContract) {
+        throw new Error("Failed to create contract instance");
+      }
+
       const balance = await ethContract.balanceOf(address);
       
       // Convert balance from uint256 to string with 18 decimals
@@ -81,88 +86,21 @@ const Navbar = () => {
     }
   };
 
-  // Connect wallet handler
-  const connectWallet = async () => {
-    const { wallet, connectorData } = await connect({
-      modalMode: "alwaysAsk",
-      modalTheme: "dark",
-      dappName: "Your App Name",
-    });
-
-    if (wallet && connectorData) {
-      setConnection(wallet);
-      setAddress(connectorData.account);
-      fetchBalance(wallet);
-    }
-  };
-
-  // Disconnect wallet handler
-  const disconnectWallet = async () => {
-    await disconnect();
-    setConnection(undefined);
-    setAddress("");
-    setBalance("0");
+  // Handle wallet disconnect
+  const handleDisconnect = async () => {
+    await disconnectWallet();
     setIsDropdownOpen(false);
+    setBalance("0");
   };
 
-  // Auto-connect on load
+  // Refresh balance periodically and on wallet/address changes
   useEffect(() => {
-    const connectToStarknet = async () => {
-      const { wallet, connectorData } = await connect({ 
-        modalMode: "neverAsk",
-        modalTheme: "dark"
-      });
-
-      if (wallet && wallet.isConnected) {
-        setConnection(wallet);
-        setAddress(wallet.selectedAddress);
-        fetchBalance(wallet);
-      }
-    };
-
-    connectToStarknet();
-  }, []);
-
-  // Refresh balance periodically and on account/network changes
-  useEffect(() => {
-    if (connection) {
-      const intervalId = setInterval(() => {
-        fetchBalance(connection);
-      }, 30000); // Refresh every 30 seconds
-
+    if (wallet && address) {
+      fetchBalance();
+      const intervalId = setInterval(fetchBalance, 30000); // Refresh every 30 seconds
       return () => clearInterval(intervalId);
     }
-  }, [connection, address]);
-
-  // Setup wallet event listeners
-  useEffect(() => {
-    if (!connection) return;
-
-    const accountChangeHandler = (accounts) => {
-      if (accounts && accounts.length > 0) {
-        setAddress(accounts[0]);
-        fetchBalance(connection);
-      } else {
-        setAddress("");
-        setBalance("0");
-      }
-    };
-
-    const networkChangeHandler = async (chainId, accounts) => {
-      if (accounts && accounts.length > 0) {
-        setAddress(accounts[0]);
-        fetchBalance(connection);
-      }
-    };
-
-    connection.on("accountsChanged", accountChangeHandler);
-    connection.on("networkChanged", networkChangeHandler);
-
-    return () => {
-      connection.off("accountsChanged", accountChangeHandler);
-      connection.off("networkChanged", networkChangeHandler);
-    };
-  }, [connection]);
+  }, [wallet, address]);
 
   // Truncate wallet address for display
   const truncateWalletAddress = (address) => {
@@ -195,13 +133,13 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="flex justify-between items-center bg-black text-white p-4 z-10">
+    <nav className="flex justify-between items-center bg-light-primary-100 dark:bg-dark-primary-100 text-light-primary-500 dark:text-white p-4 z-10">
       {/* Search Bar */}
       <div className="flex-grow max-w-lg">
         <input
           type="text"
           placeholder="Search by artists, songs or albums"
-          className="w-full px-4 py-2 rounded-md bg-zinc-800 text-white placeholder-gray-500 focus:outline-none"
+          className="w-full px-4 py-2 rounded-md bg-zinc-100 dark:bg-[#26394f] text-black dark:text-white placeholder-gray-500 focus:outline-none"
         />
       </div>
 
@@ -210,7 +148,7 @@ const Navbar = () => {
         {!address ? (
           <button 
             onClick={connectWallet}
-            className="px-4 py-2 rounded bg-zinc-800 hover:bg-zinc-700 transition-colors duration-200"
+            className="px-8 py-2 rounded-md bg-[#22577a] dark:bg-[#22577a] hover:bg-light-primary-400 dark:hover:bg-dark-primary-400 transition-colors duration-200 text-white"
           >
             Connect Wallet
           </button>
@@ -218,7 +156,7 @@ const Navbar = () => {
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              className="flex items-center justify-between space-x-4 px-5 py-2 rounded w-72 cursor-pointer hover:bg-zinc-800 transition-colors duration-200"
+              className="flex items-center border border-[#2e4357] rounded-xl justify-between space-x-4 px-5 py-2 w-72 cursor-pointer hover:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors duration-200 text-white"
             >
               <img
                 src={generateBlockie(address)}
@@ -244,10 +182,10 @@ const Navbar = () => {
             {/* Dropdown Menu */}
             {isDropdownOpen && (
               <div
-                className="absolute right-0 mt-2 w-72 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg z-50"
+                className="absolute right-0 mt-2 w-72 bg-zinc-800 dark:bg-zinc-700 border border-zinc-700 dark:border-zinc-600 rounded-lg shadow-lg z-50"
                 ref={dropdownRef}
               >
-                <div className="p-4 border-b border-zinc-700">
+                <div className="p-4 border-b border-zinc-700 dark:border-zinc-600">
                   <div className="text-sm text-gray-400">Balance</div>
                   <div className="text-lg font-semibold">
                     {isLoadingBalance ? "Loading..." : `${balance} ETH`}
@@ -257,8 +195,8 @@ const Navbar = () => {
                   <NavLink
                     to="/artist"
                     className={({ isActive }) =>
-                      `flex items-center w-full px-4 py-2 text-left hover:bg-zinc-700 transition-colors ${
-                        isActive ? "bg-zinc-700" : ""
+                      `flex items-center w-full px-4 py-2 text-left hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors ${
+                        isActive ? "bg-zinc-700 dark:bg-zinc-600" : ""
                       }`
                     }
                   >
@@ -268,8 +206,8 @@ const Navbar = () => {
                   <NavLink
                     to="/upload-music"
                     className={({ isActive }) =>
-                      `flex items-center w-full px-4 py-2 text-left hover:bg-zinc-700 transition-colors ${
-                        isActive ? "bg-zinc-700" : ""
+                      `flex items-center w-full px-4 py-2 text-left hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors ${
+                        isActive ? "bg-zinc-700 dark:bg-zinc-600" : ""
                       }`
                     }
                   >
@@ -279,17 +217,17 @@ const Navbar = () => {
                   <NavLink
                     to="/investor"
                     className={({ isActive }) =>
-                      `flex items-center w-full px-4 py-2 text-left hover:bg-zinc-700 transition-colors ${
-                        isActive ? "bg-zinc-700" : ""
+                      `flex items-center w-full px-4 py-2 text-left hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors ${
+                        isActive ? "bg-zinc-700 dark:bg-zinc-600" : ""
                       }`
                     }
                   >
                     <Settings className="mr-3 w-4 h-4" />
                     Investor
                   </NavLink>
-                  <div className="border-t border-zinc-700 my-1"></div>
+                  <div className="border-t border-zinc-700 dark:border-zinc-600 my-1"></div>
                   <button
-                    onClick={disconnectWallet}
+                    onClick={handleDisconnect}
                     className="flex items-center w-full px-4 py-2 text-left text-red-500 hover:bg-red-900/20 transition-colors"
                   >
                     <LogOut className="mr-3 w-4 h-4" />

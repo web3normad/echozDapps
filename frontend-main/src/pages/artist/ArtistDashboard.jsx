@@ -63,37 +63,37 @@ function ArtistDashboard() {
           <div className="space-y-6">
             <div className="grid grid-cols-4 gap-6">
               <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
-                <BarChart2 className="text-[#04e3cb]" size={40} />
+                <BarChart2 className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Total Streams</h4>
-                  <p className="text-2xl font-bold text-[#04e3cb]">
+                  <p className="text-2xl font-bold text-[#cc5a7e]">
                     {artistData.totalStreams.toLocaleString()}
                   </p>
                 </div>
               </div>
               <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
-                <DollarSign className="text-[#04e3cb]" size={40} />
+                <DollarSign className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Total Revenue</h4>
-                  <p className="text-2xl font-bold text-[#04e3cb]">
+                  <p className="text-2xl font-bold text-[#cc5a7e]">
                     ${artistData.totalRevenue.toLocaleString()}
                   </p>
                 </div>
               </div>
               <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
-                <Music className="text-[#04e3cb]" size={40} />
+                <Music className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Song Catalog</h4>
-                  <p className="text-2xl font-bold text-[#04e3cb]">
+                  <p className="text-2xl font-bold text-[#cc5a7e]">
                     {artistData.songCatalog.length}
                   </p>
                 </div>
               </div>
               <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
-                <Users className="text-[#04e3cb]" size={40} />
+                <Users className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Investors</h4>
-                  <p className="text-2xl font-bold text-[#04e3cb]">
+                  <p className="text-2xl font-bold text-[#cc5a7e]">
                     {artistData.investorShares.length}
                   </p>
                 </div>
@@ -102,7 +102,7 @@ function ArtistDashboard() {
 
             {/* Streaming Analytics */}
             <div className="bg-base-100 rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-bold text-[#04e3cb] mb-4">Streaming Analytics</h3>
+              <h3 className="text-xl font-bold text-[#cc5a7e] mb-4">Streaming Analytics</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart 
                   data={artistData.streamCounts}
@@ -111,22 +111,22 @@ function ArtistDashboard() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     dataKey="name" 
-                    stroke="#04e3cb"
+                    stroke="#cc5a7e"
                   />
                   <YAxis 
-                    stroke="#04e3cb"
+                    stroke="#cc5a7e"
                   />
                   <Tooltip 
                     wrapperStyle={{ 
-                      backgroundColor: '#0F0F0F',
-                      border: '1px solid #04e3cb',
-                      color: '#04e3cb'
+                      backgroundColor: '#cc5a7e',
+                      border: '1px solid #cc5a7e',
+                      color: '#cc5a7e'
                     }}
                   />
                   <Bar 
                     type="monotone" 
                     dataKey="streams" 
-                    fill="#04e3cb" 
+                    fill="#cc5a7e" 
                     barSize={30}
                   />
                 </BarChart>
@@ -136,20 +136,20 @@ function ArtistDashboard() {
         )
       case 'songs':
         return (
-          <div className="bg-base-100 rounded-xl p-6">
+          <div className="dark:bg-dark-primary-100 rounded-xl p-6">
             <h3 className="text-white text-xl mb-4">My Songs</h3>
             <div className="space-y-4">
               {artistData.songCatalog.map(song => (
                 <div 
                   key={song.id} 
-                  className="flex justify-between items-center bg-[#1a1a1a] p-4 rounded-lg"
+                  className="flex justify-between items-center dark:bg-dark-primary-200 p-4 rounded-lg"
                 >
                   <div>
-                    <h4 className="text-[#04e3cb] font-bold">{song.title}</h4>
+                    <h4 className="text-[#cc5a7e] font-bold">{song.title}</h4>
                     <p className="text-white">{song.streams.toLocaleString()} Streams</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#04e3cb] font-bold">${song.revenue.toLocaleString()}</p>
+                    <p className="text-[#cc5a7e] font-bold">${song.revenue.toLocaleString()}</p>
                     <p className="text-white">{song.sharePercentage}% Share</p>
                   </div>
                 </div>
@@ -159,20 +159,20 @@ function ArtistDashboard() {
         )
       case 'investors':
         return (
-          <div className="bg-[#252727] rounded-xl p-6">
+          <div className="dark:bg-dark-primary-100 rounded-xl p-6">
             <h3 className="text-white text-xl mb-4">Investors</h3>
             <div className="space-y-4">
               {artistData.investorShares.map((investor, index) => (
                 <div 
                   key={index} 
-                  className="flex justify-between items-center bg-[#1a1a1a] p-4 rounded-lg"
+                  className="flex justify-between items-center dark:bg-dark-primary-200 p-4 rounded-lg"
                 >
                   <div>
-                    <h4 className="text-[#04e3cb] font-bold">{investor.investorName}</h4>
+                    <h4 className="text-[#cc5a7e] font-bold">{investor.investorName}</h4>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ">
                     <p className="text-white">{investor.sharePercentage}% Share</p>
-                    <p className="text-[#04e3cb] font-bold">${investor.investmentAmount.toLocaleString()}</p>
+                    <p className="text-[#cc5a7e] font-bold">${investor.investmentAmount.toLocaleString()}</p>
                   </div>
                 </div>
               ))}
@@ -187,10 +187,10 @@ function ArtistDashboard() {
   return (
     <div className="min-h-screen text-white py-24 px-8">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-[#04e3cb]">Artist Dashboard</h2>
+        <h2 className="text-3xl font-bold text-[#cc5a7e]">Artist Dashboard</h2>
         <Link 
           to="/upload-music"
-          className="bg-[#04e3cb] text-black px-6 py-2 rounded-lg flex items-center space-x-2 hover:bg-[#03b6a0] transition-colors"
+          className="bg-[#cc5a7e] text-gray-300 px-6 py-2 rounded-lg flex items-center space-x-2 hover:bg-[#7c3f52] transition-colors"
         >
           <Upload size={20} />
           <span>Upload New Track</span>
@@ -209,8 +209,8 @@ function ArtistDashboard() {
             className={`
               flex items-center space-x-2 px-4 py-2 rounded-lg
               ${activeSection === section.name 
-                ? 'bg-[#04e3cb] text-black' 
-                : 'bg-[#252727] text-white hover:bg-[#353535]'}
+                ? 'bg-[#22577a] text-gray-100' 
+                : 'bg-dark-primary-100 text-white hover:bg-[#353535]'}
             `}
           >
             <section.icon size={20} />

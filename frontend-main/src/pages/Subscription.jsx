@@ -111,7 +111,7 @@ const Subscription = () => {
 
   return (
     <div className="h-screen w-full pt-20 overflow-hidden flex flex-col">
-      <section className="p-6 bg-white dark:bg-base-100 text-[#04e3cb] mx-6 rounded-lg shadow-lg">
+      <section className="p-6 bg-white dark:bg-dark-primary-100 text-[#cc5a7e] mx-6 rounded-lg shadow-lg">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Your Current Subscription</h2>
           <p className="text-gray-500 dark:text-white">{activeSubscription} Plan</p>
@@ -122,18 +122,18 @@ const Subscription = () => {
         {subscriptionTiers.map((tier) => (
           <div
             key={tier.name}
-            className={`flex flex-col justify-between bg-white dark:bg-[#0F0F0F] dark:text-white border rounded-lg shadow-lg p-6 ${
+            className={`flex flex-col justify-between bg-white dark:bg-dark-primary-100 dark:text-white border rounded-lg shadow-lg p-6 ${
               activeSubscription === tier.name
-                ? "border-[#04e3cb]"
+                ? "border-[#cc5a7e]"
                 : "border-transparent hover:border-[#1bf3dc]"
             }`}
           >
-            <h3 className="text-xl font-bold text-[#04e3cb]">{tier.name}</h3>
+            <h3 className="text-xl font-bold text-[#cc5a7e]">{tier.name}</h3>
             <p className="text-3xl font-bold mb-4">{tier.price}</p>
             <ul className="mb-6">
               {tier.features.map((feature, idx) => (
                 <li key={idx} className="flex items-center">
-                  <Check className="text-[#04e3cb] w-5 h-5 mr-2" />
+                  <Check className="text-[#cc5a7e] w-5 h-5 mr-2" />
                   <span>{feature}</span>
                 </li>
               ))}
@@ -143,7 +143,7 @@ const Subscription = () => {
               disabled={processingTier === tier.name || activeSubscription === tier.name}
               className={`w-full py-3 rounded-lg font-bold ${
                 activeSubscription === tier.name
-                  ? "bg-[#04e3cb] text-white cursor-not-allowed"
+                  ? "bg-[#22577a] text-white cursor-not-allowed"
                   : processingTier === tier.name
                   ? "bg-gray-300 text-gray-500"
                   : "bg-gray-200 hover:bg-gray-300 text-black"

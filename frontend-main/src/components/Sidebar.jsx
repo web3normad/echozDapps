@@ -11,7 +11,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-// import Logo from "../assets/images/logo.png"
+import Logo from "../assets/img/echoz.svg"
 
 const Sidebar = () => {
   const location = useLocation();
@@ -20,29 +20,23 @@ const Sidebar = () => {
   const menuItems = [
     { label: 'Streaming', icon: Home, link: '/stream-music' },
     { label: 'Explore Music', icon: Search, link: '/explore-music' },
-    // { label: 'Likes', icon: Heart, link: '/likes' },
-    // { label: 'Playlists', icon: ListMusic, link: '/playlists' },
-    // { label: 'Albums', icon: Album, link: '/albums' },
-    // { label: 'Following', icon: User, link: '/following' },
   ];
 
   const generalItems = [
-    { label: 'Settings', icon: Settings, link: '/settings' },
     { label: 'Subscription', icon: Crown, link: '/subscription', isNew: true },
     { label: 'Log Out', icon: LogOut, link: '/logout' },
   ];
 
   return (
-    <div className="bg-white dark:bg-[#252727] dark:text-white dark:border-r border-r-slate-400 shadow-lg h-screen w-72">
+    <div className="bg-light-primary-100 dark:bg-dark-primary-200 dark:text-white dark:border-r border-r-slate-400 shadow-lg h-screen w-72">
       {/* Sidebar Header */}
-      <div className="text-2xl font-bold text-[#04e3cb] flex items-center justify-center space-x-2">
-                {/* <img src={Logo} alt="Quiimo Logo" className='w-16' /> */}
-                 <span>Quiimo</span>
-               </div>
+      <div className="text-2xl pt-4 pl-4 font-bold text-light-primary-500 dark:text-[#cc5a7e] flex items-center justify-start space-x-2">
+       <img src={Logo} alt="echoz logo" className='w-40 h-auto'/>
+      </div>
 
       {/* Main Menu */}
-      <div className="mt-4">
-        <p className="px-4 text-gray-500 uppercase text-sm font-bold">Menu</p>
+      <div className="">
+        <p className="px-4 text-light-primary-200 dark:text-light-primary-200 uppercase text-sm font-bold">Menu</p>
         <ul className="space-y-2 mt-2">
           {menuItems.map((item, index) => (
             <MenuItem
@@ -56,7 +50,7 @@ const Sidebar = () => {
         </ul>
 
         {/* General */}
-        <p className="px-4 mt-6 text-gray-500 uppercase text-sm font-bold">
+        <p className="px-4 mt-6 text-light-primary-200 dark:text-light-primary-200 uppercase text-sm font-bold">
           General
         </p>
         <ul className="space-y-2 mt-2">
@@ -74,10 +68,7 @@ const Sidebar = () => {
 
         {/* Mobile Section */}
         <div className="mt-10 px-4">
-          {/* <button className="w-full bg-[#04e3cb] text-white py-2 rounded mb-4">
-            Download App
-          </button> */}
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-light-primary-200 dark:text-light-primary-200">
             Legal • Privacy • Terms
           </p>
         </div>
@@ -90,14 +81,16 @@ const MenuItem = ({ icon: Icon, label, link, isActive, isNew }) => {
   return (
     <li
       className={`relative flex items-center px-4 py-2 cursor-pointer group ${
-        isActive ? 'bg-[#dcfffb] dark:text-gray-800' : 'hover:bg-gray-100 hover:text-gray-700'
+        isActive
+          ? 'bg-light-primary-200 dark:bg-dark-primary-100 text-light-primary-500 dark:text-[#cc5a7e]'
+          : 'hover:bg-light-primary-100 hover:text-gray-700 dark:hover:bg-dark-primary-200'
       }`}
     >
       {isActive && (
-        <div className="absolute right-0 top-0 h-full w-1 bg-[#04e3cb] rounded-r"></div>
+        <div className="absolute right-0 top-0 h-full w-1 bg-[#cc5a7e] rounded-r"></div>
       )}
       <Link to={link} className="flex items-center w-full">
-        <Icon className={`text-gray-500 ${isActive ? 'text-[#04e3cb]' : ''}`} />
+        <Icon className={`text-light-primary-500 dark:text-light-primary-200 ${isActive ? 'text-[#cc5a7e]' : ''}`} />
         <span className="ml-4 flex items-center">
           {label}
           {isNew && (
