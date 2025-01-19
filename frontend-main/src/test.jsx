@@ -69,6 +69,33 @@ const Navbar = () => {
 
           {isDropdownOpen && (
             <div className="absolute mt-2 bg-white shadow-lg rounded p-2">
+                  <button
+                onClick={async () => {
+                  await disconnectWallet();
+                  setIsDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Home
+              </button>
+              <button
+                onClick={async () => {
+                  await disconnectWallet();
+                  setIsDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+                Profile
+              </button>
+              <button
+                onClick={async () => {
+                  await disconnectWallet();
+                  setIsDropdownOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-100"
+              >
+               Setting
+              </button>
               <button
                 onClick={async () => {
                   await disconnectWallet();

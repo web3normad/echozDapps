@@ -1,4 +1,3 @@
-// src/contexts/WalletContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { connect, disconnect } from 'get-starknet';
 import { Contract } from 'starknet';
@@ -12,10 +11,8 @@ export const WalletProvider = ({ children }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Function to create contract instance
   const getContract = (contractAddress, abi) => {
     if (!account) return null;
-    
     const contract = new Contract(abi, contractAddress, account);
     return contract;
   };
@@ -27,25 +24,31 @@ export const WalletProvider = ({ children }) => {
 
       const starknet = await connect({
         modalTheme: 'dark',
-        modalMode: 'alwaysAsk', // This ensures user can choose which wallet to connect
+        modalMode: 'alwaysAsk',
+        walletOptions: {
+          order: ['argentX', 'braavos']
+        }
       });
 
       if (!starknet) {
         throw new Error('Please install a Starknet wallet');
       }
 
-      const userWallet = starknet.account;
-      if (!userWallet) {
+      // Get the account differently based on the wallet type
+      const userAccount = starknet.account || starknet;
+      if (!userAccount) {
         throw new Error('No wallet found');
       }
 
       setWallet(starknet);
-      setAccount(userWallet);
+      setAccount(userAccount);
       setAddress(starknet.selectedAddress);
 
       // Listen for wallet changes
       starknet.on('accountsChanged', (accounts) => {
         setAddress(accounts[0]);
+        // Refresh the account when the address changes
+        setAccount(starknet.account || starknet);
       });
 
       return starknet;
@@ -55,6 +58,29 @@ export const WalletProvider = ({ children }) => {
       throw err;
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const getBalance = async () => {
+    try {
+      if (!account || !address) {
+        console.log("No account or address available");
+        return null;
+      }
+
+      // Use the correct method based on the wallet type
+      const balance = typeof account.getStraightBalance === 'function'
+        ? await account.getStraightBalance()
+        : typeof account.getBalance === 'function'
+          ? await account.getBalance()
+          : null;
+
+      console.log("Raw balance from wallet:", balance);
+      return balance;
+
+    } catch (error) {
+      console.error("Error getting balance:", error);
+      return null;
     }
   };
 
@@ -70,7 +96,6 @@ export const WalletProvider = ({ children }) => {
     }
   };
 
-  // Check for existing connection on mount
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -80,7 +105,7 @@ export const WalletProvider = ({ children }) => {
         
         if (starknet && starknet.isConnected) {
           setWallet(starknet);
-          setAccount(starknet.account);
+          setAccount(starknet.account || starknet);
           setAddress(starknet.selectedAddress);
         }
       } catch (err) {
@@ -102,6 +127,7 @@ export const WalletProvider = ({ children }) => {
         connectWallet,
         disconnectWallet,
         getContract,
+        getBalance,
       }}
     >
       {children}

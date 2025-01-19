@@ -250,7 +250,7 @@ const MusicStreamPage = () => {
   }
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="min-h-screen text-white ">
       {/* Main Content */}
       <div className="pt-20 pb-32 px-8">
       <div className="mb-8">
