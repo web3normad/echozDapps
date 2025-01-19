@@ -15,7 +15,6 @@ const Navbar = () => {
     address, 
     connectWallet, 
     disconnectWallet,
-    detectedWallet, // Get detected wallet from context
   } = useWallet();
 
   const fetchBalance = async () => {
@@ -100,16 +99,7 @@ const Navbar = () => {
       <div className="flex items-center space-x-4">
         {!address ? (
           <button 
-            onClick={() => {
-              if (detectedWallet) {
-                // Prompt user if a wallet is detected
-                if (window.confirm('Reconnect to your detected wallet?')) {
-                  connectWallet();
-                }
-              } else {
-                connectWallet();
-              }
-            }}
+            onClick={connectWallet}
             className="px-8 py-2 rounded-md bg-[#22577a] dark:bg-[#22577a] hover:bg-light-primary-400 dark:hover:bg-dark-primary-400 transition-colors duration-200 text-white"
           >
             Connect Wallet
@@ -183,15 +173,14 @@ const Navbar = () => {
                     <Settings className="mr-3 w-4 h-4" />
                     Investor
                   </NavLink>
-                  <div className="border-t border-zinc-700 dark:border-zinc-600 mt-3">
-                    <button
-                      onClick={handleDisconnect}
-                      className="w-full px-4 py-2 text-left text-red-500 hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
-                    >
-                      <LogOut className="mr-3 w-4 h-4" />
-                      Disconnect
-                    </button>
-                  </div>
+                  <div className="border-t border-zinc-700 dark:border-zinc-600 my-1"></div>
+                  <button
+                    onClick={handleDisconnect}
+                    className="flex items-center w-full px-4 py-2 text-left text-red-500 hover:bg-red-900/20 transition-colors"
+                  >
+                    <LogOut className="mr-3 w-4 h-4" />
+                    Logout
+                  </button>
                 </div>
               </div>
             )}

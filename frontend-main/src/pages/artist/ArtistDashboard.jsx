@@ -71,7 +71,7 @@ function ArtistDashboard() {
                   </p>
                 </div>
               </div>
-              <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
+              <div className="bg-base-100 p-6 rounded-full flex items-center space-x-4">
                 <DollarSign className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Total Revenue</h4>
@@ -80,7 +80,7 @@ function ArtistDashboard() {
                   </p>
                 </div>
               </div>
-              <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
+              <div className="bg-base-100 p-6 rounded-full flex items-center space-x-4">
                 <Music className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Song Catalog</h4>
@@ -89,7 +89,7 @@ function ArtistDashboard() {
                   </p>
                 </div>
               </div>
-              <div className="bg-base-100 p-6 rounded-xl flex items-center space-x-4">
+              <div className="bg-base-100 p-6 rounded-full flex items-center space-x-4">
                 <Users className="text-[#cc5a7e]" size={40} />
                 <div>
                   <h4 className="text-white">Investors</h4>
@@ -120,6 +120,7 @@ function ArtistDashboard() {
                     wrapperStyle={{ 
                       backgroundColor: '#cc5a7e',
                       border: '1px solid #cc5a7e',
+                      borderRadius: '10px',
                       color: '#cc5a7e'
                     }}
                   />
@@ -190,7 +191,7 @@ function ArtistDashboard() {
         <h2 className="text-3xl font-bold text-[#cc5a7e]">Artist Dashboard</h2>
         <Link 
           to="/upload-music"
-          className="bg-[#cc5a7e] text-gray-300 px-6 py-2 rounded-lg flex items-center space-x-2 hover:bg-[#7c3f52] transition-colors"
+          className="bg-[#cc5a7e] text-gray-300 px-6 py-2 rounded-full flex items-center space-x-2 hover:bg-[#7c3f52] transition-colors"
         >
           <Upload size={20} />
           <span>Upload New Track</span>
@@ -207,9 +208,9 @@ function ArtistDashboard() {
             key={section.name}
             onClick={() => setActiveSection(section.name)}
             className={`
-              flex items-center space-x-2 px-4 py-2 rounded-lg
+              flex items-center space-x-2 px-4 py-2 rounded-full
               ${activeSection === section.name 
-                ? 'bg-[#22577a] text-gray-100' 
+                ? 'bg-[#cc5a7e] text-gray-100' 
                 : 'bg-dark-primary-100 text-white hover:bg-[#353535]'}
             `}
           >

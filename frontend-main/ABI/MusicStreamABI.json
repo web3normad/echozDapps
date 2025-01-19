@@ -1,261 +1,279 @@
 [
-    {
-      "name": "MusicSharePlatform",
-      "type": "impl",
-      "interface_name": "contract::IMusicSharePlatform"
-    },
-    {
-      "name": "core::integer::u256",
-      "type": "struct",
-      "members": [
-        {
-          "name": "low",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "high",
-          "type": "core::integer::u128"
-        }
-      ]
-    },
-    {
-      "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
-      "type": "struct",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
-        }
-      ]
-    },
-    {
-      "name": "core::array::Span::<core::integer::u256>",
-      "type": "struct",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u256>"
-        }
-      ]
-    },
-    {
-      "name": "contract::IMusicSharePlatform",
-      "type": "interface",
-      "items": [
-        {
-          "name": "upload_song",
-          "type": "function",
-          "inputs": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "genre",
-              "type": "core::felt252"
-            },
-            {
-              "name": "ipfs_audio_hash",
-              "type": "core::felt252"
-            },
-            {
-              "name": "ipfs_artwork_hash",
-              "type": "core::felt252"
-            },
-            {
-              "name": "total_shares",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "share_price",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "core::integer::u256"
-            }
-          ],
-          "state_mutability": "external"
-        },
-        {
-          "name": "buy_shares",
-          "type": "function",
-          "inputs": [
-            {
-              "name": "song_id",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "shares_count",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "name": "distribute_revenue",
-          "type": "function",
-          "inputs": [
-            {
-              "name": "song_id",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "revenue",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [],
-          "state_mutability": "external"
-        },
-        {
-          "name": "get_song_details",
-          "type": "function",
-          "inputs": [
-            {
-              "name": "song_id",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "(core::felt252, core::felt252, core::felt252, core::felt252, core::integer::u256, core::integer::u256)"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "name": "get_shareholders",
-          "type": "function",
-          "inputs": [
-            {
-              "name": "song_id",
-              "type": "core::integer::u256"
-            }
-          ],
-          "outputs": [
-            {
-              "type": "(core::array::Span::<core::starknet::contract_address::ContractAddress>, core::array::Span::<core::integer::u256>)"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "name": "get_all_song_ids",
-          "type": "function",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "core::array::Span::<core::integer::u256>"
-            }
-          ],
-          "state_mutability": "view"
-        }
-      ]
-    },
-    {
-      "name": "constructor",
-      "type": "constructor",
-      "inputs": []
-    },
-    {
-      "kind": "struct",
-      "name": "contract::MusicPlatform::SongUploaded",
-      "type": "event",
-      "members": [
-        {
-          "kind": "key",
-          "name": "song_id",
-          "type": "core::integer::u256"
-        },
-        {
-          "kind": "data",
-          "name": "artist",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "kind": "data",
-          "name": "name",
-          "type": "core::felt252"
-        },
-        {
-          "kind": "data",
-          "name": "genre",
-          "type": "core::felt252"
-        },
-        {
-          "kind": "data",
-          "name": "total_shares",
-          "type": "core::integer::u256"
-        },
-        {
-          "kind": "data",
-          "name": "share_price",
-          "type": "core::integer::u256"
-        }
-      ]
-    },
-    {
-      "kind": "struct",
-      "name": "contract::MusicPlatform::SharePurchased",
-      "type": "event",
-      "members": [
-        {
-          "kind": "key",
-          "name": "song_id",
-          "type": "core::integer::u256"
-        },
-        {
-          "kind": "data",
-          "name": "investor",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "kind": "data",
-          "name": "shares_bought",
-          "type": "core::integer::u256"
-        }
-      ]
-    },
-    {
-      "kind": "struct",
-      "name": "contract::MusicPlatform::RevenueDistributed",
-      "type": "event",
-      "members": [
-        {
-          "kind": "key",
-          "name": "song_id",
-          "type": "core::integer::u256"
-        },
-        {
-          "kind": "data",
-          "name": "total_revenue",
-          "type": "core::integer::u256"
-        }
-      ]
-    },
-    {
-      "kind": "enum",
-      "name": "contract::MusicPlatform::Event",
-      "type": "event",
-      "variants": [
-        {
-          "kind": "nested",
-          "name": "SongUploaded",
-          "type": "contract::MusicPlatform::SongUploaded"
-        },
-        {
-          "kind": "nested",
-          "name": "SharePurchased",
-          "type": "contract::MusicPlatform::SharePurchased"
-        },
-        {
-          "kind": "nested",
-          "name": "RevenueDistributed",
-          "type": "contract::MusicPlatform::RevenueDistributed"
-        }
-      ]
-    }
-  ]
+  {
+    "name": "MusicSharePlatform",
+    "type": "impl",
+    "interface_name": "contract::IMusicSharePlatform"
+  },
+  {
+    "name": "core::byte_array::ByteArray",
+    "type": "struct",
+    "members": [
+      {
+        "name": "data",
+        "type": "core::array::Array::<core::bytes_31::bytes31>"
+      },
+      {
+        "name": "pending_word",
+        "type": "core::felt252"
+      },
+      {
+        "name": "pending_word_len",
+        "type": "core::integer::u32"
+      }
+    ]
+  },
+  {
+    "name": "core::integer::u256",
+    "type": "struct",
+    "members": [
+      {
+        "name": "low",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "high",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
+    "type": "struct",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
+      }
+    ]
+  },
+  {
+    "name": "core::array::Span::<core::integer::u256>",
+    "type": "struct",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::integer::u256>"
+      }
+    ]
+  },
+  {
+    "name": "contract::IMusicSharePlatform",
+    "type": "interface",
+    "items": [
+      {
+        "name": "upload_song",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "name",
+            "type": "core::felt252"
+          },
+          {
+            "name": "genre",
+            "type": "core::felt252"
+          },
+          {
+            "name": "ipfs_audio_hash",
+            "type": "core::byte_array::ByteArray"
+          },
+          {
+            "name": "ipfs_artwork_hash",
+            "type": "core::byte_array::ByteArray"
+          },
+          {
+            "name": "total_shares",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "share_price",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u256"
+          }
+        ],
+        "state_mutability": "external"
+      },
+      {
+        "name": "buy_shares",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "song_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "shares_count",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "name": "distribute_revenue",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "song_id",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "revenue",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "name": "get_song_details",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "song_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "(core::felt252, core::felt252, core::byte_array::ByteArray, core::byte_array::ByteArray, core::integer::u256, core::integer::u256)"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "get_shareholders",
+        "type": "function",
+        "inputs": [
+          {
+            "name": "song_id",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "(core::array::Span::<core::starknet::contract_address::ContractAddress>, core::array::Span::<core::integer::u256>)"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "name": "get_all_song_ids",
+        "type": "function",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::array::Span::<core::integer::u256>"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "name": "constructor",
+    "type": "constructor",
+    "inputs": []
+  },
+  {
+    "kind": "struct",
+    "name": "contract::MusicPlatform::SongUploaded",
+    "type": "event",
+    "members": [
+      {
+        "kind": "key",
+        "name": "song_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "artist",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "kind": "data",
+        "name": "name",
+        "type": "core::felt252"
+      },
+      {
+        "kind": "data",
+        "name": "genre",
+        "type": "core::felt252"
+      },
+      {
+        "kind": "data",
+        "name": "total_shares",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "share_price",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
+    "kind": "struct",
+    "name": "contract::MusicPlatform::SharePurchased",
+    "type": "event",
+    "members": [
+      {
+        "kind": "key",
+        "name": "song_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "investor",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "kind": "data",
+        "name": "shares_bought",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
+    "kind": "struct",
+    "name": "contract::MusicPlatform::RevenueDistributed",
+    "type": "event",
+    "members": [
+      {
+        "kind": "key",
+        "name": "song_id",
+        "type": "core::integer::u256"
+      },
+      {
+        "kind": "data",
+        "name": "total_revenue",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
+    "kind": "enum",
+    "name": "contract::MusicPlatform::Event",
+    "type": "event",
+    "variants": [
+      {
+        "kind": "nested",
+        "name": "SongUploaded",
+        "type": "contract::MusicPlatform::SongUploaded"
+      },
+      {
+        "kind": "nested",
+        "name": "SharePurchased",
+        "type": "contract::MusicPlatform::SharePurchased"
+      },
+      {
+        "kind": "nested",
+        "name": "RevenueDistributed",
+        "type": "contract::MusicPlatform::RevenueDistributed"
+      }
+    ]
+  }
+]

@@ -1,93 +1,107 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Contract } from "starknet";
+import { Contract, defaultProvider } from "starknet";
 import { Rocket, Award } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import MusicContractABI from "../../../ABI/MusicStreamABI.json";
 
-// Contract address and ABI
-const MUSIC_CONTRACT_ADDRESS =
-  "0x44414ebe24856f8ee4653f94dd1c4b839a02d2dce73c938d1c8aa2c4e099342";
-
-const MusicPlatformABI = [
-  {
-    type: "function",
-    name: "get_all_song_ids",
-    inputs: [],
-    outputs: [{ type: "core::array::Span::<core::integer::u256>" }],
-    state_mutability: "view",
-  },
-  {
-    type: "function",
-    name: "get_song_details",
-    inputs: [{ name: "song_id", type: "core::integer::u256" }],
-    outputs: [
-      {
-        type: "(core::felt252, core::felt252, core::felt252, core::felt252, core::integer::u256, core::integer::u256)",
-      },
-    ],
-    state_mutability: "view",
-  },
-  {
-    type: "function",
-    name: "buy_shares",
-    inputs: [
-      { name: "song_id", type: "core::integer::u256" },
-      { name: "shares_count", type: "core::integer::u256" },
-    ],
-    outputs: [],
-    state_mutability: "external",
-  },
-];
+const MUSIC_CONTRACT_ADDRESS = "0x008116e28d9b4767a530ec96d4c84ce31d0e5b157880bc589a58effd7203202c";
 
 const ExplorePage = () => {
-  const navigate = useNavigate(); // Use navigate from react-router-dom
   const [exploreMode, setExploreMode] = useState("trending");
   const [musicTracks, setMusicTracks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [modalTrack, setModalTrack] = useState(null);
+  const [selectedTrack, setSelectedTrack] = useState(null);
   const [sharesToBuy, setSharesToBuy] = useState("");
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+
+  // Updated decode function to handle BigInt values
+  const decodeHexString = (value) => {
+    if (!value) return '';
+    
+    // Convert BigInt to hex string
+    let hexString = value.toString(16);
+    
+    // Ensure even length
+    if (hexString.length % 2 !== 0) {
+      hexString = '0' + hexString;
+    }
+    
+    let str = '';
+    for (let i = 0; i < hexString.length; i += 2) {
+      const byte = parseInt(hexString.substr(i, 2), 16);
+      if (byte === 0) break;
+      str += String.fromCharCode(byte);
+    }
+    return str.trim();
+  };
 
   const fetchMusicTracks = async () => {
-    setIsLoading(true);
     try {
-      if (!window.starknet) {
-        throw new Error("Starknet wallet not detected");
-      }
+      setIsLoading(true);
+      setError(null);
 
-      await window.starknet.enable();
-      const account = await window.starknet.account;
+      const provider = defaultProvider;
+      const contract = new Contract(MusicContractABI, MUSIC_CONTRACT_ADDRESS, provider);
 
-      const contract = new Contract(MusicPlatformABI, MUSIC_CONTRACT_ADDRESS, account);
-
-      // Get all song IDs
       const response = await contract.get_all_song_ids();
-      const trackIds = response[0]; // Adjust based on your contract's return format
+      console.log("Raw song IDs:", response);
+      
+      const songIds = Array.isArray(response) ? response : [response];
 
       const tracks = await Promise.all(
-        trackIds.map(async (songId) => {
+        songIds.map(async (songId) => {
           try {
-            const response = await contract.get_song_details(songId);
-            const [name, genre, ipfsAudioHash, ipfsArtworkHash, totalShares, sharePrice] = response[0];
+            const songDetails = await contract.get_song_details(songId);
+            console.log(`Song details for ID ${songId}:`, songDetails);
+
+            // Convert contract values to BigInt
+            const nameValue = BigInt(songDetails[0].toString());
+            const genreValue = BigInt(songDetails[1].toString());
+            const musicHash = songDetails[2]?.toString();
+            const artworkHash = songDetails[3]?.toString();
+            const totalShares = songDetails[4]?.toString();
+            const sharePrice = songDetails[5]?.toString();
+
+            // Decode the name and genre
+            const name = decodeHexString(nameValue);
+            const genre = decodeHexString(genreValue);
+
+            console.log(`Decoded values for song ${songId}:`, {
+              name,
+              genre,
+              musicHash,
+              artworkHash,
+              totalShares,
+              sharePrice
+            });
 
             return {
               id: songId.toString(),
-              title: name,
-              genre,
-              coverImage: `https://gateway.pinata.cloud/ipfs/${ipfsArtworkHash}`,
-              songUrl: `https://gateway.pinata.cloud/ipfs/${ipfsAudioHash}`,
-              availableShares: totalShares.low.toString(),
-              pricePerShare: (Number(sharePrice.low) / 1e18).toString(),
+              title: name || 'Untitled',
+              genre: genre || 'Unknown Genre',
+              coverImage: `https://ipfs.io/ipfs/${artworkHash}`,
+              songUrl: `https://ipfs.io/ipfs/${musicHash}`,
+              availableShares: totalShares || '0',
+              pricePerShare: sharePrice ? (parseInt(sharePrice) / 1e18).toFixed(4) : '0'
             };
           } catch (err) {
-            console.error(`Error fetching details for song ${songId}:`, err);
+            console.error(`Error processing song ID ${songId}:`, err);
             return null;
           }
         })
       );
 
-      setMusicTracks(tracks.filter((track) => track !== null));
+      const validTracks = tracks.filter(track => track !== null);
+      
+      if (validTracks.length === 0) {
+        throw new Error("No valid tracks found");
+      }
+
+      console.log('Processed tracks:', validTracks);
+      setMusicTracks(validTracks);
     } catch (err) {
       setError(`Failed to fetch music tracks: ${err.message}`);
       toast.error(`Error fetching tracks: ${err.message}`);
@@ -96,127 +110,147 @@ const ExplorePage = () => {
     }
   };
 
+  const handlePurchaseClick = (track) => {
+    setSelectedTrack(track);
+    setShowPurchaseModal(true);
+  };
+
+  const handlePurchaseConfirm = async () => {
+    if (!selectedTrack || !sharesToBuy || isNaN(sharesToBuy) || sharesToBuy <= 0) {
+      toast.error("Please enter a valid number of shares");
+      return;
+    }
+
+    setPurchaseLoading(true);
+    try {
+      const provider = defaultProvider;
+      const contract = new Contract(MusicContractABI, MUSIC_CONTRACT_ADDRESS, provider);
+
+      const shareAmount = parseInt(sharesToBuy);
+      const totalCost = BigInt(selectedTrack.pricePerShare) * BigInt(shareAmount);
+
+      const tx = await contract.buy_shares(
+        selectedTrack.id,
+        shareAmount,
+        { value: totalCost.toString() }
+      );
+
+      await provider.waitForTransaction(tx.transaction_hash);
+      toast.success(`Successfully purchased ${shareAmount} shares!`);
+      setShowPurchaseModal(false);
+      fetchMusicTracks();
+    } catch (err) {
+      toast.error(`Purchase failed: ${err.message}`);
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchMusicTracks();
   }, []);
 
-  const handleBuyShares = async (track) => {
-    try {
-      if (!track) {
-        toast.error("Track data is missing!");
-        return;
-      }
-
-      if (!window.starknet) {
-        toast.error("Starknet wallet not detected");
-        return;
-      }
-
-      if (!sharesToBuy || isNaN(Number(sharesToBuy)) || Number(sharesToBuy) <= 0) {
-        toast.error("Please enter a valid number of shares.");
-        return;
-      }
-
-      await window.starknet.enable();
-      const account = await window.starknet.account;
-
-      const contract = new Contract(MusicPlatformABI, MUSIC_CONTRACT_ADDRESS, account);
-
-      const sharesCount = {
-        low: sharesToBuy,
-        high: "0",
-      };
-
-      const { transaction_hash } = await contract.buy_shares(track.id, sharesCount);
-
-      await account.waitForTransaction(transaction_hash);
-
-      toast.success(`Successfully bought ${sharesToBuy} shares of ${track.title}!`);
-      fetchMusicTracks();
-      setModalTrack(null);
-    } catch (error) {
-      console.error("Error buying shares:", error);
-      toast.error(`Failed to buy shares: ${error.message}`);
-    }
-  };
-
-  const modeButtons = [
-    { name: "trending", icon: Rocket },
-    { name: "new", icon: Award },
-  ];
-
-  const renderMusicCards = () => {
-    if (isLoading) {
-      return <div className="text-center">Loading tracks...</div>;
-    }
-
-    if (error) {
-      return <div className="text-red-500 text-center">{error}</div>;
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {musicTracks.map((track) => (
-          <div
-            key={track.id}
-            className="bg-gray-800 rounded-lg overflow-hidden shadow-lg"
-          >
-            <img
-              src={track.coverImage}
-              alt={track.title}
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-4">
-              <h3 className="text-xl font-semibold mb-2">{track.title}</h3>
-              <p className="text-gray-400 mb-2">Genre: {track.genre}</p>
-              <p className="text-gray-400 mb-4">
-                Available Shares: {track.availableShares}
-              </p>
-              <p className="text-[#04e3cb] mb-4">
-                Price per Share: {track.pricePerShare} ETH
-              </p>
-              <button
-                onClick={() => setModalTrack(track)}
-                className="w-full bg-[#04e3cb] text-black py-2 rounded-lg hover:bg-[#03b09d] transition-colors"
-              >
-                Buy Shares
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
-    <div className="container mx-auto py-6 text-white">
+    <div className="container mx-auto p-6 text-white">
       <ToastContainer />
-      <h1 className="text-2xl font-bold mb-6 text-[#04e3cb]">Music Investment Hub</h1>
+      
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#cc5a7e] mb-2">Music Marketplace</h1>
+        <p className="text-gray-400">Invest in your favorite music tracks with STRK</p>
+      </div>
 
-      <div className="flex space-x-4 mb-6">
-        {modeButtons.map((mode) => (
+      {/* Mode Selection */}
+      <div className="flex space-x-4 mb-8">
+        {[
+          { name: "trending", icon: Rocket },
+          { name: "new", icon: Award },
+        ].map((mode) => (
           <button
             key={mode.name}
             onClick={() => setExploreMode(mode.name)}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-              exploreMode === mode.name
-                ? "bg-[#04e3cb] text-black"
-                : "bg-cyan-100 text-gray-500 hover:bg-cyan-200"
-            }`}
+            className={`
+              flex items-center space-x-2 px-6 py-3 rounded-full transition-all
+              ${exploreMode === mode.name
+                ? "bg-[#cc5a7e] text-black"
+                : "bg-dark-primary-300 text-white hover:bg-[#353535]"}
+            `}
           >
-            <mode.icon className="w-4 h-4" />
-            <span className="capitalize">{mode.name}</span>
+            <mode.icon className="w-5 h-5" />
+            <span className="capitalize font-medium">{mode.name}</span>
           </button>
         ))}
       </div>
 
-      {renderMusicCards()}
+      {/* Track Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="animate-pulse">
+              <div className="bg-primary-400 h-64 rounded-lg mb-4"></div>
+              <div className="h-4 bg-dark-primary-400 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-dark-primary-400 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center p-8">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {musicTracks.map((track) => (
+            <div
+              key={track.id}
+              className="bg-[#252727] rounded-lg overflow-hidden transition-transform hover:scale-[1.02]"
+            >
+              <div className="relative">
+                <img
+                  src={track.coverImage}
+                  alt={track.title}
+                  className="w-full aspect-square object-cover"
+                  onError={(e) => {
+                    e.target.src = "/default_cover.jpg";
+                  }}
+                />
+                <div className="absolute top-2 right-2 bg-[#cc5a7e] text-black px-3 py-1 rounded-full text-sm">
+                  {track.genre}
+                </div>
+              </div>
+              
+              <div className="p-4">
+                <h3 className="text-xl font-bold mb-1">{track.title}</h3>
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Available Shares</span>
+                    <span className="font-medium">{track.availableShares}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Price per Share</span>
+                    <span className="font-medium text-[#cc5a7e]">{track.pricePerShare} STRK</span>
+                  </div>
+                </div>
 
-      {modalTrack && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Buy Shares - {modalTrack.title}</h2>
-            <div className="mb-4">
+                <button
+                  onClick={() => handlePurchaseClick(track)}
+                  className="w-full bg-[#cc5a7e] text-black py-3 rounded-full font-medium hover:bg-[#cc5a7e] transition-colors"
+                >
+                  Purchase Shares
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Purchase Modal */}
+      {showPurchaseModal && selectedTrack && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+          <div className="bg-dark-primary-100 rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-2xl text-[#cc5a7e] font-bold mb-4">Purchase Shares</h2>
+            
+            <div className="mb-6">
+              <p className="text-gray-200 mb-2">Track: {selectedTrack.title}</p>
+              <p className="text-gray-200 mb-4">Price per Share: {selectedTrack.pricePerShare} STRK</p>
+              
               <label className="block text-sm font-medium mb-2">
                 Number of Shares
               </label>
@@ -224,20 +258,29 @@ const ExplorePage = () => {
                 type="number"
                 value={sharesToBuy}
                 onChange={(e) => setSharesToBuy(e.target.value)}
-                className="w-full p-2 bg-gray-700 rounded-lg"
-                min="1"
+                className="w-full bg-dark-primary-400 border border-gray-700 rounded-lg px-4 py-2"
+                placeholder="Enter amount"
               />
+              
+              {sharesToBuy && !isNaN(sharesToBuy) && (
+                <p className="mt-2 text-[#cc5a7e]">
+                  Total Cost: {BigInt(selectedTrack.pricePerShare) * BigInt(sharesToBuy)} STRK
+                </p>
+              )}
             </div>
+
             <div className="flex space-x-4">
               <button
-                onClick={() => handleBuyShares(modalTrack)}
-                className="flex-1 bg-[#04e3cb] text-black py-2 rounded-lg hover:bg-[#03b09d]"
+                onClick={handlePurchaseConfirm}
+                disabled={purchaseLoading}
+                className={`flex-1 bg-[#cc5a7e] text-black py-3 rounded-full font-medium
+                  ${purchaseLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#cc5a7e]'}`}
               >
-                Confirm Purchase
+                {purchaseLoading ? 'Processing...' : 'Confirm Purchase'}
               </button>
               <button
-                onClick={() => setModalTrack(null)}
-                className="flex-1 bg-gray-600 py-2 rounded-lg hover:bg-gray-500"
+                onClick={() => setShowPurchaseModal(false)}
+                className="flex-1 bg-gray-600 text-white py-3 rounded-full font-medium hover:bg-gray-700"
               >
                 Cancel
               </button>

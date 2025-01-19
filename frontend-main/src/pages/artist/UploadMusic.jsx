@@ -2,11 +2,12 @@ import React, { useState, useRef } from "react";
 import { UploadCloud, Image as ImageIcon } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Contract, uint256, shortString } from "starknet";
+import { Contract, shortString, uint256 } from "starknet";
 import { connect } from "get-starknet";
 import MusicContractABI from "../../../ABI/MusicStreamABI.json";
+import { base58btc } from 'multiformats/bases/base58';
 
-const MUSIC_CONTRACT_ADDRESS = "0x00356077b414bb3fda4f8ef1e44bc2a3fd7eb108b722eeeaec08917468c425bd";
+const MUSIC_CONTRACT_ADDRESS = "0x008116e28d9b4767a530ec96d4c84ce31d0e5b157880bc589a58effd7203202c";
 
 const UploadMusic = () => {
   const [newRelease, setNewRelease] = useState({
@@ -23,16 +24,31 @@ const UploadMusic = () => {
   const musicFileInputRef = useRef(null);
   const albumCoverInputRef = useRef(null);
 
-  const ipfsHashToFelt = (hash) => {
-    const cleanHash = hash.replace(/^(Qm|bafy)/, "");
-    const truncatedHash = cleanHash
-      .split("")
-      .map((char) => char.charCodeAt(0).toString(16))
-      .join("")
-      .slice(0, 31);
-
-    return `0x${truncatedHash}`;
+  // Helper function to split and process IPFS hash
+  const processIPFSHash = (hash) => {
+    // Add 'z' prefix if not present
+    if (!hash.startsWith('z')) {
+      hash = `z${hash}`;
+    }
+  
+    // Decode Base58 IPFS hash to bytes
+    const decodedBytes = base58btc.decode(hash);
+  
+    // Convert bytes to hex string using TextEncoder and slice into chunks
+    const chunks = [];
+    for (let i = 0; i < decodedBytes.length; i += 31) {
+      const chunk = decodedBytes.slice(i, i + 31);
+      
+      // Convert the byte array to hex string
+      const hexString = Array.from(chunk).map(byte => byte.toString(16).padStart(2, '0')).join('');
+      
+      chunks.push(`0x${hexString}`);
+    }
+  
+    return chunks;
   };
+  
+  
 
   const uploadToPinata = async ({ file, type }) => {
     try {
@@ -115,67 +131,84 @@ const UploadMusic = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsUploading(true);
-
+  
     try {
       validateForm();
-
+  
       const starknet = await connect();
       if (!starknet) {
         throw new Error("Please install and connect a StarkNet wallet");
       }
-
+  
       const provider = starknet.provider;
       if (!provider) {
         throw new Error("No provider found");
       }
-
+  
       const walletAddress = starknet.selectedAddress;
       if (!walletAddress) {
         throw new Error("Please connect your wallet first");
       }
-
+  
+      console.log("Uploading files to Pinata...");
       const musicFileIPFSHash = await uploadToPinata({
         file: newRelease.musicFile,
         type: "music",
       });
-
+  
       const albumCoverIPFSHash = await uploadToPinata({
         file: newRelease.albumCover,
         type: "cover",
       });
-
-      const contract = new Contract(MusicContractABI, MUSIC_CONTRACT_ADDRESS, provider);
+  
+      console.log("Creating contract instance...");
+      const contract = new Contract(
+        MusicContractABI,
+        MUSIC_CONTRACT_ADDRESS,
+        provider
+      );
       contract.connect(starknet.account);
-
+  
+      // Use the raw IPFS hash (without chunking)
+      const musicHash = musicFileIPFSHash;
+      const artworkHash = albumCoverIPFSHash;
+  
       const name = shortString.encodeShortString(newRelease.name.trim());
       const genre = shortString.encodeShortString(newRelease.genre);
-      const musicHash = ipfsHashToFelt(musicFileIPFSHash);
-      const artworkHash = ipfsHashToFelt(albumCoverIPFSHash);
-
-      const totalShares = uint256.bnToUint256(
-        newRelease.totalShares && Number(newRelease.totalShares) >= 0
-          ? BigInt(newRelease.totalShares)
-          : BigInt(100)
-      );
-
-      const sharePrice = uint256.bnToUint256(
-        newRelease.sharePrice && Number(newRelease.sharePrice) >= 0
-          ? BigInt(Math.floor(parseFloat(newRelease.sharePrice) * 1e18))
-          : BigInt(1e16)
-      );
-
-      const { transaction_hash } = await contract.invoke("upload_song", [
+  
+      const totalSharesBn = BigInt(newRelease.totalShares);
+      const sharePriceBn = BigInt(Math.floor(parseFloat(newRelease.sharePrice) * 1e18));
+  
+      console.log("Contract call parameters:", {
         name,
         genre,
         musicHash,
         artworkHash,
-        totalShares,
-        sharePrice,
-      ]);
-
-      await provider.waitForTransaction(transaction_hash);
+        totalShares: { low: totalSharesBn, high: 0n },
+        sharePrice: { low: sharePriceBn, high: 0n }
+      });
+  
+      const result = await contract.invoke(
+        "upload_song",
+        [
+          name,
+          genre,
+          musicHash, // Pass the IPFS hash as a string
+          artworkHash, // Pass the album cover IPFS hash as a string
+          { low: totalSharesBn, high: 0n },
+          { low: sharePriceBn, high: 0n },
+        ],
+        {
+          maxFee: 9999999999,
+        }
+      );
+  
+      console.log("Transaction result:", result);
+      await provider.waitForTransaction(result.transaction_hash);
+  
       toast.success("Song uploaded successfully!");
-
+  
+      // Reset form
       setNewRelease({
         name: "",
         genre: "",
@@ -184,12 +217,21 @@ const UploadMusic = () => {
         totalShares: "",
         sharePrice: "",
       });
-
+  
       if (musicFileInputRef.current) musicFileInputRef.current.value = null;
       if (albumCoverInputRef.current) albumCoverInputRef.current.value = null;
+  
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(`Upload failed: ${error.message}`);
+      let errorMessage = error.message;
+  
+      if (error.message.includes("insufficient")) {
+        errorMessage = "Insufficient funds for transaction. Please check your wallet balance.";
+      } else if (error.message.includes("rejected")) {
+        errorMessage = "Transaction was rejected. Please try again.";
+      }
+  
+      toast.error(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
@@ -199,8 +241,8 @@ const UploadMusic = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <ToastContainer />
-      <div className="border-white dark:bg-[#252727] w-full max-w-5xl rounded-2xl shadow-2xl p-8">
-        <h3 className="text-3xl font-extrabold text-[#04e3cb] mb-6 text-center">
+      <div className="border-white dark:bg-dark-primary-300 w-full max-w-5xl rounded-2xl shadow-2xl p-8">
+        <h3 className="text-3xl font-extrabold text-[#cc5a7e] mb-6 text-center">
           Upload Your Music
         </h3>
         <form className="space-y-6" onSubmit={handleFormSubmit}>
@@ -214,7 +256,7 @@ const UploadMusic = () => {
               name="name"
               value={newRelease.name}
               onChange={handleInputChange}
-              className="w-full p-3 bg-[#1A1C1C] text-white rounded-xl"
+              className="w-full p-3 bg-dark-primary-400 text-white rounded-xl"
               placeholder="Enter song name"
               required
             />
@@ -229,7 +271,7 @@ const UploadMusic = () => {
               name="genre"
               value={newRelease.genre}
               onChange={handleInputChange}
-              className="w-full p-3 bg-[#1A1C1C] text-white rounded-xl"
+              className="w-full p-3 bg-dark-primary-400 text-white rounded-xl"
               required
             >
               <option value="">Select genre</option>
@@ -260,7 +302,7 @@ const UploadMusic = () => {
                 accept=".mp3,.wav"
                 required
               />
-              <UploadCloud className="w-12 h-12 mx-auto text-[#04e3cb]" />
+              <UploadCloud className="w-12 h-12 mx-auto text-[#cc5a7e]" />
               <p className="mt-4 text-center text-white text-lg">
                 {newRelease.musicFile 
                   ? newRelease.musicFile.name 
@@ -287,7 +329,7 @@ const UploadMusic = () => {
                 accept="image/*"
                 required
               />
-              <ImageIcon className="w-12 h-12 mx-auto text-[#04e3cb]" />
+              <ImageIcon className="w-12 h-12 mx-auto text-[#cc5a7e]" />
               <p className="mt-4 text-center text-white text-lg">
                 {newRelease.albumCover 
                   ? newRelease.albumCover.name 
@@ -306,7 +348,7 @@ const UploadMusic = () => {
               name="totalShares"
               value={newRelease.totalShares}
               onChange={handleInputChange}
-              className="w-full p-3 bg-[#1A1C1C] text-white rounded-xl"
+              className="w-full p-3 bg-dark-primary-400 text-white rounded-xl"
               placeholder="Enter total shares (default: 100)"
             />
           </div>
@@ -321,7 +363,7 @@ const UploadMusic = () => {
               name="sharePrice"
               value={newRelease.sharePrice}
               onChange={handleInputChange}
-              className="w-full p-3 bg-[#1A1C1C] text-white rounded-xl"
+              className="w-full p-3 bg-dark-primary-400 text-white rounded-xl"
               placeholder="Enter share price (default: 0.01 STRK)"
             />
           </div>
@@ -329,7 +371,7 @@ const UploadMusic = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className={`w-full py-3 px-5 mt-4 bg-[#04e3cb] text-gray-700 text-lg font-semibold rounded-xl transition-all duration-300 hover:bg-[#38837b] ${
+            className={`w-full py-3 px-5 mt-4 bg-[#cc5a7e] text-gray-800 text-lg font-semibold rounded-xl transition-all duration-300 hover:bg-[#38837b] ${
               isUploading && "cursor-not-allowed opacity-50"
             }`}
             disabled={isUploading}

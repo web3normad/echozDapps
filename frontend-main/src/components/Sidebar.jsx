@@ -11,7 +11,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import Logo from "../assets/img/echoz.svg"
+import Logo from "../assets/img/echoz-logo.svg"
 
 const Sidebar = () => {
   const location = useLocation();
@@ -30,8 +30,12 @@ const Sidebar = () => {
   return (
     <div className="bg-light-primary-100 dark:bg-dark-primary-200 dark:text-white dark:border-r border-r-slate-400 shadow-lg h-screen w-72">
       {/* Sidebar Header */}
-      <div className="text-2xl pt-4 pl-4 font-bold text-light-primary-500 dark:text-[#cc5a7e] flex items-center justify-start space-x-2">
-       <img src={Logo} alt="echoz logo" className='w-40 h-auto'/>
+      <div className="text-6xl pt-4 pl-4 font-bold text-light-primary-500 dark:text-[#cc5a7e] mb-4 flex items-center justify-start space-x-2">
+       <img src={Logo} alt="echoz logo" className='w-16 h-16'/>
+       <h1 className='text-4xl text-[#cc5a7e] text-justify font-bold' style={{ fontFamily: "'League Spartan', serif" }}>
+        echoz
+      </h1>
+
       </div>
 
       {/* Main Menu */}
